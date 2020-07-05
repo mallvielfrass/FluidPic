@@ -74,7 +74,7 @@ func DeleteItem(x, y int, box MainBox) MainBox {
 	ln := len(box.Item)
 	for i := 0; i < ln; i++ {
 		if box.Item[i].X == x && box.Item[i].Y == y {
-			fmt.Printf("%d %d deleted\n", x, y)
+			//	fmt.Printf("%d %d deleted\n", x, y)
 		} else {
 			Localbox.AddItem(box.Item[i])
 		}
@@ -85,7 +85,7 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 	_, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
 	if cUp != 0 {
 		if 0 <= (yk - 1) {
-			fmt.Println("cUp != 0 ")
+			//	fmt.Println("cUp != 0 ")
 			box.AddItem(Item{
 				X: xk,
 				Y: yk - 1,
@@ -93,7 +93,7 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 		}
 	}
 	if cDown != 0 {
-		fmt.Println("cDown != 0 ")
+		//	fmt.Println("cDown != 0 ")
 		box.AddItem(Item{
 			X: xk,
 			Y: yk + 1,
@@ -101,7 +101,7 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 	}
 	if cLeft != 0 {
 		if 0 <= (xk - 1) {
-			fmt.Println("cLeft != 0 ")
+			//	fmt.Println("cLeft != 0 ")
 			box.AddItem(Item{
 				X: xk - 1,
 				Y: yk,
@@ -119,8 +119,7 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 
 func main() {
 	arg := os.Args[1]
-	//arg := "origin.png"
-	printl(arg)
+	//printl(arg)
 	imgfile, err := os.Open(arg)
 	errCheck(err)
 
@@ -136,12 +135,6 @@ func main() {
 	imgfile.Seek(0, 0)
 	img, _, err := image.Decode(imgfile)
 	m := image.NewRGBA(image.Rect(0, 0, width, height))
-	//	outFile, err := os.Create("test" + arg)
-	//	if err != nil {
-	//	log.Fatal(err)
-	//	}
-	//defer outFile.Close()
-
 	draw.Draw(m, m.Bounds(), img, image.Point{0, 0}, draw.Src)
 	ItemList := []Item{}
 	box := MainBox{ItemList}
@@ -168,7 +161,7 @@ func main() {
 				var xk int = h
 				var yk int = j
 				//c, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
-				fmt.Println("color=", c)
+				//	fmt.Println("color=", c)
 
 				boxDuble := MainBox{ItemList}
 				mcopy := image.NewRGBA(image.Rect(0, 0, width, height))
@@ -181,20 +174,20 @@ func main() {
 				item = item + 1
 				m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
 				//fmt.Println("4sleep:")
-				fmt.Println(box)
+				//		fmt.Println(box)
 				//time.Sleep(4000 * time.Millisecond)
 				if c != 0 {
-					fmt.Printf("c!=0 %d\n", c)
+					//		fmt.Printf("c!=0 %d\n", c)
 					m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
 					box = FindAll(box, xk, yk, m)
 					boxDuble = FindAll(boxDuble, xk, yk, m)
 				}
-				fmt.Println("box:")
+				//		fmt.Println("box:")
 				fmt.Println(box)
 				fmt.Println("Start cicle__________________")
 
 				for {
-					fmt.Println("Iteration")
+					//		fmt.Println("Iteration")
 
 					if len(box.Item) != 0 {
 						for i, v := range box.Item {
@@ -206,7 +199,7 @@ func main() {
 								fmt.Printf("Pixel  %d,%d is Black\n", v.X, v.Y)
 							}
 
-							fmt.Printf("box len %d c=%d\n", len(box.Item), c)
+							//			fmt.Printf("box len %d c=%d\n", len(box.Item), c)
 
 							if c != 0 {
 								fmt.Printf("Ranger c!=0 %d\n", c)
@@ -220,20 +213,20 @@ func main() {
 								fmt.Printf("Pixel  %d,%d already is Black\n", v.X, v.Y)
 								box = DeleteItem(v.X, v.Y, box)
 							}
-							fmt.Println("box in iter:")
-							fmt.Println(box)
+							//			fmt.Println("box in iter:")
+							//			fmt.Println(box)
 							//time.Sleep(2000 * time.Millisecond)
 						}
 					} else {
 						break
 					}
 				}
-				fmt.Print("box: ")
-				fmt.Println(box)
-				fmt.Println(boxDuble)
+				//	fmt.Print("box: ")
+				//		fmt.Println(box)
+				//		fmt.Println(boxDuble)
 				//Work Zone Closed
 				for {
-					fmt.Println("Iteration")
+					fmt.Println("Iteration output create")
 
 					if len(boxDuble.Item) != 0 {
 						for _, z := range boxDuble.Item {
