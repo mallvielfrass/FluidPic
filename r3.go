@@ -8,6 +8,8 @@ import (
 	"image/png"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func init() {
@@ -82,7 +84,7 @@ func DeleteItem(x, y int, box MainBox) MainBox {
 func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 	_, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
 	if cUp != 0 {
-		if 0 < (yk - 1) {
+		if 0 <= (yk - 1) {
 			fmt.Println("cUp != 0 ")
 			box.AddItem(Item{
 				X: xk,
@@ -98,7 +100,7 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 		})
 	}
 	if cLeft != 0 {
-		if 0 < (xk - 1) {
+		if 0 <= (xk - 1) {
 			fmt.Println("cLeft != 0 ")
 			box.AddItem(Item{
 				X: xk - 1,
@@ -116,8 +118,8 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 }
 
 func main() {
-	//arg := os.Args[1]
-	arg := "si.png"
+	arg := os.Args[1]
+	//arg := "origin.png"
 	printl(arg)
 	imgfile, err := os.Open(arg)
 	errCheck(err)
@@ -132,64 +134,123 @@ func main() {
 	fmt.Println("\nWidth : ", width)
 	fmt.Println("Height : ", height)
 	imgfile.Seek(0, 0)
-	var xk int = (width / 2)
-	var yk int = (height / 2)
-	fmt.Printf("center: %d %d \n", xk, yk)
 	img, _, err := image.Decode(imgfile)
-
 	m := image.NewRGBA(image.Rect(0, 0, width, height))
-	outFile, err := os.Create("1" + arg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer outFile.Close()
+	//	outFile, err := os.Create("test" + arg)
+	//	if err != nil {
+	//	log.Fatal(err)
+	//	}
+	//defer outFile.Close()
+
 	draw.Draw(m, m.Bounds(), img, image.Point{0, 0}, draw.Src)
-	// Work Zone
-	//
-	//
-	c := check(xk, yk, m)
-	//c, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
-	fmt.Println("color=", c)
 	ItemList := []Item{}
 	box := MainBox{ItemList}
-	m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
-	fmt.Println("4sleep:")
-	fmt.Println(box)
-	//time.Sleep(4000 * time.Millisecond)
-	if c != 0 {
-		fmt.Printf("c!=0 %d\n", c)
-		m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
-		box = FindAll(box, xk, yk, m)
+	var xk int = (width / 2)
+	var yk int = (height / 2)
+	item := 0
+	pathx := strings.Split(arg, ".")
+	path := pathx[0]
+	errDir := os.MkdirAll(path, 0755)
+	if errDir != nil {
+		panic(err)
 	}
-	fmt.Println("box:")
-	fmt.Println(box)
-	for {
-		fmt.Println("Iteration")
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// path/to/whatever does not exist
+	}
+	fmt.Printf("center: %d %d \n", xk, yk)
+	for h := 0; h < width; h++ {
+		for j := 0; j < height; j++ {
+			// Work Zone
+			//
+			//
+			c := check(h, j, m)
+			if c != 0 {
+				var xk int = h
+				var yk int = j
+				//c, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
+				fmt.Println("color=", c)
 
-		if len(box.Item) != 0 {
-			for _, v := range box.Item {
-				fmt.Printf("Debug\n")
-				fmt.Printf("box len %d\n", len(box.Item))
-				c := check(v.X, v.X, m)
-				if c != 0 {
-					fmt.Printf("Ranger c!=0 %d\n", c)
-					m.Set(v.X, v.Y, color.RGBA{0, 0, 0, 255})
-					box = DeleteItem(v.X, v.Y, box)
-
-					box = FindAll(box, v.X, v.Y, m)
-				} else {
-					box = DeleteItem(v.X, v.Y, box)
+				boxDuble := MainBox{ItemList}
+				mcopy := image.NewRGBA(image.Rect(0, 0, width, height))
+				s := strconv.Itoa(item)
+				copyto, err := os.Create(path + "/" + s + ".png")
+				if err != nil {
+					log.Fatal(err)
 				}
-				fmt.Println("box in iter:")
+				defer copyto.Close()
+				item = item + 1
+				m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
+				//fmt.Println("4sleep:")
 				fmt.Println(box)
-				//time.Sleep(2000 * time.Millisecond)
+				//time.Sleep(4000 * time.Millisecond)
+				if c != 0 {
+					fmt.Printf("c!=0 %d\n", c)
+					m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
+					box = FindAll(box, xk, yk, m)
+					boxDuble = FindAll(boxDuble, xk, yk, m)
+				}
+				fmt.Println("box:")
+				fmt.Println(box)
+				fmt.Println("Start cicle__________________")
+
+				for {
+					fmt.Println("Iteration")
+
+					if len(box.Item) != 0 {
+						for i, v := range box.Item {
+							fmt.Printf("inter %d\n", i)
+							c := check(v.X, v.Y, m)
+							if c != 0 {
+								fmt.Printf("Pixel  %d,%d is White\n", v.X, v.Y)
+							} else {
+								fmt.Printf("Pixel  %d,%d is Black\n", v.X, v.Y)
+							}
+
+							fmt.Printf("box len %d c=%d\n", len(box.Item), c)
+
+							if c != 0 {
+								fmt.Printf("Ranger c!=0 %d\n", c)
+								m.Set(v.X, v.Y, color.RGBA{0, 0, 0, 255})
+								fmt.Printf("Pixel  %d,%d Set as Black\n", v.X, v.Y)
+								box = DeleteItem(v.X, v.Y, box)
+
+								box = FindAll(box, v.X, v.Y, m)
+								boxDuble = FindAll(boxDuble, v.X, v.Y, m)
+							} else {
+								fmt.Printf("Pixel  %d,%d already is Black\n", v.X, v.Y)
+								box = DeleteItem(v.X, v.Y, box)
+							}
+							fmt.Println("box in iter:")
+							fmt.Println(box)
+							//time.Sleep(2000 * time.Millisecond)
+						}
+					} else {
+						break
+					}
+				}
+				fmt.Print("box: ")
+				fmt.Println(box)
+				fmt.Println(boxDuble)
+				//Work Zone Closed
+				for {
+					fmt.Println("Iteration")
+
+					if len(boxDuble.Item) != 0 {
+						for _, z := range boxDuble.Item {
+
+							mcopy.Set(z.X, z.Y, color.RGBA{0, 0, 0, 255})
+							fmt.Printf("BoxSet %d,%d Set as Black\n", z.X, z.Y)
+							boxDuble = DeleteItem(z.X, z.Y, boxDuble)
+
+						}
+					} else {
+						break
+					}
+				}
+				png.Encode(copyto, mcopy)
 			}
-		} else {
-			break
 		}
 	}
-	fmt.Println("box:")
-	fmt.Println(box)
-	//Work Zone Closed
-	png.Encode(outFile, m)
+	//png.Encode(outFile, m)
+
 }
