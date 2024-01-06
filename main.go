@@ -17,16 +17,6 @@ func init() {
 	// caused memory pointer error!!
 	image.RegisterFormat("png", "png", png.Decode, png.DecodeConfig)
 }
-func errCheck(err error) {
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-type Point struct {
-	X, Y int
-}
 
 func check(xk, yk int, img image.Image) int {
 	rf, gf, bf, _ := img.At(xk, yk).RGBA()
@@ -55,21 +45,13 @@ func getAll(xk, yk int, img image.Image) (c, cUp, cDown, cLeft, cRigth int) {
 	return c, cUp, cDown, cLeft, cRigth
 }
 
-type MainBox struct {
-	Item []Item
-}
-type Item struct {
-	X int
-	Y int
-}
-
-func (box *MainBox) AddItem(item Item) []Item {
+func (box *FiguresCollection) AddItem(item Item) []Item {
 	box.Item = append(box.Item, item)
 	return box.Item
 }
-func DeleteItem(x, y int, box MainBox) MainBox {
+func DeleteItem(x, y int, box FiguresCollection) FiguresCollection {
 	ItemList := []Item{}
-	Localbox := MainBox{ItemList}
+	Localbox := FiguresCollection{ItemList}
 	fmt.Println(len(box.Item))
 	ln := len(box.Item)
 	for i := 0; i < ln; i++ {
@@ -81,7 +63,7 @@ func DeleteItem(x, y int, box MainBox) MainBox {
 	}
 	return Localbox
 }
-func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
+func (box *FiguresCollection) FindAll(xk, yk int, m image.Image) {
 	_, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
 	if cUp != 0 {
 		if 0 <= (yk - 1) {
@@ -114,32 +96,46 @@ func FindAll(box MainBox, xk, yk int, m image.Image) MainBox {
 			Y: yk,
 		})
 	}
-	return box
 }
 
 func main() {
+	//get original image name from args
 	arg := os.Args[1]
-	//printl(arg)
+	if arg == "" {
+		fmt.Println("No argument")
+		os.Exit(1)
+	}
+	//trim space from image name
+	arg = removeSpace(arg)
+	fmt.Printf("Image name:[%s]\n", arg)
+	//open original image
 	imgfile, err := os.Open(arg)
-	errCheck(err)
-
+	if err != nil {
+		fmt.Printf("imageOpen Error: %v\n", err)
+		os.Exit(1)
+	}
+	//
 	defer imgfile.Close()
-	imgCfg, _, err := image.DecodeConfig(imgfile)
-	errCheck(err)
+	//get image width and height
+	originalImgParams, err := imageParams(imgfile)
+	if err != nil {
+		fmt.Printf("imageParams Error: %v\n", err)
+		os.Exit(1)
+	}
 
-	width := imgCfg.Width
-	height := imgCfg.Height
-
-	fmt.Println("\nWidth : ", width)
-	fmt.Println("Height : ", height)
-	imgfile.Seek(0, 0)
-	img, _, err := image.Decode(imgfile)
-	m := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.Draw(m, m.Bounds(), img, image.Point{0, 0}, draw.Src)
+	fmt.Println("\nWidth : ", originalImgParams.width)
+	fmt.Println("Height : ", originalImgParams.height)
+	//read image data
+	originalImageCanvas, _, err := image.Decode(imgfile)
+	if err != nil {
+		fmt.Printf("imageDecode Error: %v\n", err)
+		os.Exit(1)
+	}
+	//create virtual image copy
+	virtualImageCanvas := image.NewRGBA(image.Rect(0, 0, originalImgParams.width, originalImgParams.height))
+	draw.Draw(virtualImageCanvas, virtualImageCanvas.Bounds(), originalImageCanvas, image.Point{0, 0}, draw.Src)
 	ItemList := []Item{}
-	box := MainBox{ItemList}
-	var xk int = (width / 2)
-	var yk int = (height / 2)
+	box := FiguresCollection{ItemList}
 	item := 0
 	pathx := strings.Split(arg, ".")
 	path := pathx[0]
@@ -150,21 +146,21 @@ func main() {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// path/to/whatever does not exist
 	}
-	fmt.Printf("center: %d %d \n", xk, yk)
-	for h := 0; h < width; h++ {
-		for j := 0; j < height; j++ {
+	//	fmt.Printf("center: %d %d \n", xk, yk)
+	for h := 0; h < originalImgParams.width; h++ {
+		for j := 0; j < originalImgParams.height; j++ {
 			// Work Zone
 			//
 			//
-			c := check(h, j, m)
+			c := check(h, j, virtualImageCanvas)
 			if c != 0 {
 				var xk int = h
 				var yk int = j
 				//c, cUp, cDown, cLeft, cRigth := getAll(xk, yk, m)
 				//	fmt.Println("color=", c)
 
-				boxDuble := MainBox{ItemList}
-				mcopy := image.NewRGBA(image.Rect(0, 0, width, height))
+				boxDuble := FiguresCollection{ItemList}
+				mcopy := image.NewRGBA(image.Rect(0, 0, originalImgParams.width, originalImgParams.height))
 				s := strconv.Itoa(item)
 				copyto, err := os.Create(path + "/" + s + ".png")
 				if err != nil {
@@ -172,16 +168,10 @@ func main() {
 				}
 				defer copyto.Close()
 				item = item + 1
-				m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
-				//fmt.Println("4sleep:")
-				//		fmt.Println(box)
-				//time.Sleep(4000 * time.Millisecond)
-				if c != 0 {
-					//		fmt.Printf("c!=0 %d\n", c)
-					m.Set(xk, yk, color.RGBA{0, 0, 0, 255})
-					box = FindAll(box, xk, yk, m)
-					boxDuble = FindAll(boxDuble, xk, yk, m)
-				}
+				virtualImageCanvas.Set(xk, yk, color.RGBA{0, 0, 0, 255})
+				box.FindAll(xk, yk, virtualImageCanvas)
+				boxDuble.FindAll(xk, yk, virtualImageCanvas)
+				//}
 				//		fmt.Println("box:")
 				fmt.Println(box)
 				fmt.Println("Start cicle__________________")
@@ -192,7 +182,7 @@ func main() {
 					if len(box.Item) != 0 {
 						for i, v := range box.Item {
 							fmt.Printf("inter %d\n", i)
-							c := check(v.X, v.Y, m)
+							c := check(v.X, v.Y, virtualImageCanvas)
 							if c != 0 {
 								fmt.Printf("Pixel  %d,%d is White\n", v.X, v.Y)
 							} else {
@@ -203,12 +193,12 @@ func main() {
 
 							if c != 0 {
 								fmt.Printf("Ranger c!=0 %d\n", c)
-								m.Set(v.X, v.Y, color.RGBA{0, 0, 0, 255})
+								virtualImageCanvas.Set(v.X, v.Y, color.RGBA{0, 0, 0, 255})
 								fmt.Printf("Pixel  %d,%d Set as Black\n", v.X, v.Y)
 								box = DeleteItem(v.X, v.Y, box)
 
-								box = FindAll(box, v.X, v.Y, m)
-								boxDuble = FindAll(boxDuble, v.X, v.Y, m)
+								box.FindAll(v.X, v.Y, virtualImageCanvas)
+								boxDuble.FindAll(v.X, v.Y, virtualImageCanvas)
 							} else {
 								fmt.Printf("Pixel  %d,%d already is Black\n", v.X, v.Y)
 								box = DeleteItem(v.X, v.Y, box)
